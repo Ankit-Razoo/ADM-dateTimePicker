@@ -1254,7 +1254,7 @@
                     });
 
                     $timeout(function() {
-                        var top = document.documentElement.scrollTop || document.body.scrollTop;
+                      var top = (document.documentElement.scrollTop || document.body.scrollTop) - parseInt(document.body.style.top);
                         var popup = document.getElementById(scope.dtpId);
                         var popupBound = popup.getBoundingClientRect();
                         var _input = element.children().children()[0];
