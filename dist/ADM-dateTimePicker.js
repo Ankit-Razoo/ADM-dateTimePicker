@@ -485,8 +485,8 @@
             formats.unshift(format);
 
             for(var i=0,j=formats.length;i<j;i++) {
-                var _isValid = new RegExp('^' + formats[i].replace(/[a-z]+/gi, function(key) {
-                    var _mustReplace = false;
+                var testFormat = formats[i].replace(/[a-z]+/gi, function(key) {
+                    var _mustReplace = false, timemode = false;
                     if (key.indexOf('YY') != -1)
                         _keys.push('year'), _mustReplace=true;
                     else if (key.indexOf('MM') != -1)
@@ -497,12 +497,17 @@
                         _keys.push('hour'), _mustReplace=true;
                     else if (key.indexOf('mm') != -1)
                         _keys.push('minute'), _mustReplace=true;
+                    else if (key.indexOf('A') != -1)
+                        _keys.push('timemode'), timemode = true;
 
                     if (_mustReplace)
                         return '[0-9]+';
+                    else if(timemode)
+                        return 'AM|PM';
                     else
                         return key;
-                }).replace(/[(]/g, '[(]').replace(/[)]/g, '[)]') + '$').test(str);
+                });
+                var _isValid = new RegExp('^' + testFormat.replace(/[(]/g, '[(]').replace(/[)]/g, '[)]') + '$').test(str);
 
                 if (!_isValid)
                     continue;
@@ -909,7 +914,10 @@
                         return;
 
                     scope.dtpValue.selected = false;
-
+                    if(scope.option.deselectDayEnable && scope.dtpValue.unix === day.unix) {
+                      admDtp.destroy(true);
+                      return;
+                    }
                     admDtp.updateMasterValue(day, 'day');
 
                     if (scope.option.autoClose) {
@@ -1375,6 +1383,10 @@
                     $scope.updateMasterValue(newDate, releaseTheBeast);
                 }
 
+                this.destroy = function(noRefresh) {
+                    $scope.destroy(noRefresh);
+                }
+
                 this.fillDays = function(date, noTransition) {
 
                     if (noTransition)
@@ -1413,7 +1425,7 @@
                     var _today = new Date();
                     _today = [_today.getFullYear(), _today.getMonth()+1, _today.getDate(), 1, 0].dtp_toDate('unix');
 
-                    var _selected = ($scope.dtpValue.unix || -1), _selectedIdx;
+                    var _selected = ([$scope.dtpValue.year, $scope.dtpValue.month, $scope.dtpValue.day, 1, 0].dtp_toDate('unix') || -1), _selectedIdx;
 
                     var _currDay = [_input.year, _input.month, _input.day, 1, 0].dtp_toDate('date');
                     var _firstDayName = new Date(angular.copy(_currDay).setDate(1)).getDay();
@@ -1452,8 +1464,15 @@
                         var _isMin = false;
                         var _valid = 1;
                         if ($scope.minDate || $scope.maxDate) {
+                            var compareDate ;
+                            if($scope.minDate){
+                              compareDate = new Date($scope.minDate);
+                            } else {
+                              compareDate = new Date($scope.maxDate);
+                            }
+                            compareDate = new Date(new Date(compareDate.setHours(Number($scope.time.hour))).setMinutes($scope.time.minute));
                             var _dateTime = ADMdtpFactory.joinTime(_ite_date, $scope.time);
-                            if (($scope.minDate && !ADMdtpFactory.isDateBigger(_dateTime,$scope.minDate)) || ($scope.maxDate && !ADMdtpFactory.isDateBigger($scope.maxDate,_dateTime))) {
+                            if (($scope.minDate && !ADMdtpFactory.isDateBigger(_dateTime,compareDate)) || ($scope.maxDate && !ADMdtpFactory.isDateBigger(compareDate,_dateTime))) {
                                 _valid = 0;
 
                                 if (_lastValidStat == 2)
@@ -1518,7 +1537,6 @@
                         _date = _cur;
                     this.fillDays(_date, !$scope.option.transition);
                 }
-
                 this.vm = $scope;
             }],
             //templateUrl: 'js/ADM-dateTimePicker/ADM-dateTimePicker_view.html'
@@ -1531,7 +1549,7 @@
             require: ['^^admDtp', 'ngModel'],
             link: function(scope, element, attrs, ctrls) {
                 var admDtp = ctrls[0], ngModel = ctrls[1];
-
+                var opened = false;
                 ngModel.$parsers.push(function() {
                     return ngModel.$modelValue;
                 })
@@ -1540,6 +1558,10 @@
 
                 element.on('focus', function() {
                     admDtp.vm.openCalendar();
+                    if(!opened){
+                      angular.element(element).blur();
+                      opened = true;
+                    }
                 });
                 element.on('blur', function() {
                     admDtp.vm.modelChanged(element[0].value);
