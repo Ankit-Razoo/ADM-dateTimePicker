@@ -502,7 +502,6 @@ a:hover {
   height: 1.7em;
   position: relative;
   overflow: hidden;
-  background-color: inherit;
 }
 /* line 428, ../src/ADM-dateTimePicker.scss */
 .ADMdtp-box footer .today {
@@ -569,7 +568,6 @@ a:hover {
   width: 100%;
   height: 100%;
   padding: 0.1em 0;
-  font-size: inherit;
   white-space: nowrap;
   color: #cab15c;
   -moz-transition: all 0.3s, -moz-transform 0.3s cubic-bezier(0.680, -0.550, 0.265, 1.550);
